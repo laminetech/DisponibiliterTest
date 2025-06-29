@@ -5,12 +5,12 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Secure token from environment variable
-const SECURE_TOKEN = process.env.SECURE_TOKEN;
+const SECURE_TOKEN = process.env.SECURE_TOKEN || "98bf8612dc1ac4fa3c9ee72d06b16949"; // Par sécurité, tu peux garder ça dans Render secrets
 
 // Middleware
 app.use(bodyParser.text({ type: "text/plain" }));
 
-// Function to check token
+// Vérifie le token Authorization
 const checkToken = (req, res, next) => {
   const token = req.headers.authorization;
   if (token === SECURE_TOKEN) {
@@ -20,7 +20,7 @@ const checkToken = (req, res, next) => {
   }
 };
 
-// Execute endpoint
+// Endpoint /execute
 app.post("/execute", checkToken, (req, res) => {
   const code = req.body;
   if (!code) {
@@ -28,7 +28,6 @@ app.post("/execute", checkToken, (req, res) => {
   }
 
   try {
-    // Execute the code
     const result = eval(code);
     res.json({ result });
   } catch (error) {
@@ -36,6 +35,7 @@ app.post("/execute", checkToken, (req, res) => {
   }
 });
 
+// Démarrer le serveur sur le port dynamique
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
