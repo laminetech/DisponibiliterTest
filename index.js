@@ -2,15 +2,12 @@ const express = require("express");
 const bodyParser = require("body-parser");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 
-// Secure token from environment variable
-const SECURE_TOKEN = process.env.SECURE_TOKEN;
+const SECURE_TOKEN = process.env.SECURE_TOKEN || "98bf8612dc1ac4fa3c9ee72d06b16949";
 
-// Middleware
-app.use(bodyParser.text({ type: "text/plain" }));
+app.use(bodyParser.text({ type: "*/*" })); // accepte tout type MIME
 
-// Function to check token
 const checkToken = (req, res, next) => {
   const token = req.headers.authorization;
   if (token === SECURE_TOKEN) {
@@ -20,15 +17,16 @@ const checkToken = (req, res, next) => {
   }
 };
 
-// Execute endpoint
 app.post("/execute", checkToken, (req, res) => {
   const code = req.body;
-  if (!code) {
-    return res.status(400).json({ error: "No code provided" });
+
+  console.log("CODE REÇU :", code); // pour debug dans Render
+
+  if (!code || typeof code !== "string") {
+    return res.status(400).json({ error: "No code provided or invalid format" });
   }
 
   try {
-    // Execute the code
     const result = eval(code);
     res.json({ result });
   } catch (error) {
