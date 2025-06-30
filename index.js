@@ -9,6 +9,7 @@ const SECURE_TOKEN = process.env.SECURE_TOKEN || "98bf8612dc1ac4fa3c9ee72d06b169
 
 app.use(bodyParser.text({ type: "*/*" }));
 
+// 🔐 Authentification
 const checkToken = (req, res, next) => {
   const token = req.headers.authorization;
   if (token === SECURE_TOKEN) {
@@ -25,11 +26,22 @@ app.post("/execute", checkToken, (req, res) => {
     return res.status(400).json({ error: "Aucune phrase valide reçue." });
   }
 
-  // 🔍 Nettoyage intelligent (supprime les mots inutiles à la fin comme “précises”, “approximativement”, etc.)
+  // 🧹 Nettoyage intelligent
   phrase = phrase
     .replace(/(précises?|approximativement|environ|vers|autour de|entre\s.+)$/gi, "")
     .replace(/\s+/, " ")
+    .replace(/\b1 juillet\b/, "1er juillet") // Corriger le 1 juillet vers 1er juillet
     .trim();
+
+  // 🧠 Ajout automatique de "le" devant le jour si manquant
+  const jours = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
+  for (const jour of jours) {
+    const regex = new RegExp(`^${jour}\\b`, "i");
+    if (regex.test(phrase)) {
+      phrase = "le " + phrase;
+      break;
+    }
+  }
 
   try {
     const parsedDate = chrono.parseDate(phrase, new Date(), { forwardDate: true });
