@@ -1,12 +1,13 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+const chrono = require("chrono-node");
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
 const SECURE_TOKEN = process.env.SECURE_TOKEN || "98bf8612dc1ac4fa3c9ee72d06b16949";
 
-app.use(bodyParser.text({ type: "*/*" })); // accepte tout type MIME
+app.use(bodyParser.text({ type: "*/*" }));
 
 const checkToken = (req, res, next) => {
   const token = req.headers.authorization;
@@ -18,19 +19,30 @@ const checkToken = (req, res, next) => {
 };
 
 app.post("/execute", checkToken, (req, res) => {
-  const code = req.body;
+  const phrase = req.body;
 
-  console.log("CODE REÇU :", code); // pour debug dans Render
+  console.log("PHRASE REÇUE :", phrase);
 
-  if (!code || typeof code !== "string") {
-    return res.status(400).json({ error: "No code provided or invalid format" });
+  if (!phrase || typeof phrase !== "string") {
+    return res.status(400).json({ error: "No phrase provided or invalid format" });
   }
 
   try {
-    const result = eval(code);
-    res.json({ result });
+    const parsedDate = chrono.parseDate(phrase, new Date(), { forwardDate: true });
+
+    if (!parsedDate) {
+      return res.status(400).json({ error: "Unable to parse date" });
+    }
+
+    const startDate = new Date(parsedDate);
+    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // +1h
+
+    res.json({
+      starttime: startDate.toISOString().slice(0, 19),
+      endtime: endDate.toISOString().slice(0, 19)
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message, trace: error.stack });
+    res.status(500).json({ error: error.message });
   }
 });
 
