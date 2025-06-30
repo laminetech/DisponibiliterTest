@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const chrono = require("chrono-node");
+const { DateTime } = require("luxon");
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -21,40 +22,34 @@ const checkToken = (req, res, next) => {
 app.post("/execute", checkToken, (req, res) => {
   const phrase = req.body;
 
-  console.log("🟡 PHRASE REÇUE :", phrase);
+  console.log("PHRASE REÇUE :", phrase);
 
   if (!phrase || typeof phrase !== "string") {
-    return res.status(400).json({ error: "Aucune phrase reçue ou format invalide." });
+    return res.status(400).json({ error: "No phrase provided or invalid format" });
   }
 
   try {
-    // Nettoyage de la phrase pour éviter les erreurs de parsing
-    const cleanedPhrase = phrase
-      .toLowerCase()
-      .replace(/\./g, "")                           // Supprimer les points
-      .replace(/\s+à\s+/g, " ")                     // Enlever le "à"
-      .replace(/(\d{1,2})h(\d{2})?/g, (_, h, m) => `${h}:${m || "00"}`); // Convertit 17h ou 17h30 → 17:00 ou 17:30
-
-    const parsedDate = chrono.fr.parseDate(cleanedPhrase, new Date(), { forwardDate: true });
+    const parsedDate = chrono.parseDate(phrase, new Date(), { forwardDate: true });
 
     if (!parsedDate) {
       return res.status(400).json({ error: "Impossible d'interpréter la date. Reformulez SVP." });
     }
 
-    const startDate = new Date(parsedDate);
-    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // +1h
+    // Convertit la date en fuseau horaire America/Montreal
+    const start = DateTime.fromJSDate(parsedDate).setZone("America/Montreal");
+    const end = start.plus({ hours: 1 });
 
     res.json({
       result: {
-        starttime: startDate.toISOString().slice(0, 19),
-        endtime: endDate.toISOString().slice(0, 19)
+        starttime: start.toISO({ suppressMilliseconds: true }),
+        endtime: end.toISO({ suppressMilliseconds: true })
       }
     });
   } catch (error) {
-    res.status(500).json({ error: "Erreur serveur : " + error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ Server is running on port ${PORT}`);
+  console.log(`✅ Serveur actif sur le port ${PORT}`);
 });
