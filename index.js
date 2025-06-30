@@ -18,28 +18,24 @@ const checkToken = (req, res, next) => {
   }
 };
 
-function nettoyerTexte(input) {
-  return input
-    .trim()
-    .replace(/[.?!]+$/g, "")          // Supprime les ponctuations de fin
-    .replace(/\s+/g, " ")             // Réduit les espaces multiples
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // Supprime les accents
-}
-
 app.post("/execute", checkToken, (req, res) => {
-  const phraseBrute = req.body;
+  const phrase = req.body;
 
-  console.log("📥 PHRASE REÇUE :", phraseBrute);
+  console.log("🟡 PHRASE REÇUE :", phrase);
 
-  if (!phraseBrute || typeof phraseBrute !== "string") {
-    return res.status(400).json({ error: "Aucune phrase reçue." });
+  if (!phrase || typeof phrase !== "string") {
+    return res.status(400).json({ error: "Aucune phrase reçue ou format invalide." });
   }
 
-  const phraseNettoyee = nettoyerTexte(phraseBrute);
-  console.log("🧹 PHRASE NETTOYÉE :", phraseNettoyee);
-
   try {
-    const parsedDate = chrono.parseDate(phraseNettoyee, new Date(), { forwardDate: true });
+    // Nettoyage de la phrase pour éviter les erreurs de parsing
+    const cleanedPhrase = phrase
+      .toLowerCase()
+      .replace(/\./g, "")                           // Supprimer les points
+      .replace(/\s+à\s+/g, " ")                     // Enlever le "à"
+      .replace(/(\d{1,2})h(\d{2})?/g, (_, h, m) => `${h}:${m || "00"}`); // Convertit 17h ou 17h30 → 17:00 ou 17:30
+
+    const parsedDate = chrono.fr.parseDate(cleanedPhrase, new Date(), { forwardDate: true });
 
     if (!parsedDate) {
       return res.status(400).json({ error: "Impossible d'interpréter la date. Reformulez SVP." });
@@ -55,8 +51,7 @@ app.post("/execute", checkToken, (req, res) => {
       }
     });
   } catch (error) {
-    console.error("❌ ERREUR PARSING :", error);
-    res.status(500).json({ error: "Erreur interne du serveur." });
+    res.status(500).json({ error: "Erreur serveur : " + error.message });
   }
 });
 
