@@ -37,6 +37,7 @@ app.post("/execute", checkToken, (req, res) => {
     const startDate = new Date(parsedDate);
     const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // +1h
 
+    // ✅ Attention ici : on renvoie un vrai objet JSON imbriqué (PAS une string)
     res.json({
       result: {
         starttime: startDate.toISOString().slice(0, 19),
