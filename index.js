@@ -38,8 +38,10 @@ app.post("/execute", checkToken, (req, res) => {
     const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // +1h
 
     res.json({
-      starttime: startDate.toISOString().slice(0, 19),
-      endtime: endDate.toISOString().slice(0, 19)
+      result: {
+        starttime: startDate.toISOString().slice(0, 19),
+        endtime: endDate.toISOString().slice(0, 19)
+      }
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
